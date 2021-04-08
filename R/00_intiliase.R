@@ -5,3 +5,9 @@ setwd(working_directory)
 
 # load library programs ---------------
 library(tidyverse)
+library(magrittr)
+library(vroom)
+library(httr)
+library(XML)
+library(rvest)
+library(janitor)
