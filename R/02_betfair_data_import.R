@@ -1,10 +1,14 @@
 # about -----
-# this file imports data from betfair databases (online csv files) and merges
-# with existing data
+# this file imports data from betfair databases (online csv files) and saves
+# to .rda files in data/
+# due to time constraints saves by year
 
-# arbitrary starting date of Jan 2020 set for testing purposes
+# assign year we're looking for------
 
-# import data ------
+# define year we're looking for
+year <- "2008"
+
+# access website ------
 
 # save url location
 betfair_url <- "https://promo.betfair.com/betfairsp/prices/"
@@ -42,10 +46,47 @@ betfair_horse_racing <- betfair_horse_racing %>%
 # add in links column to table
 betfair_horse_racing$links <- paste("https://promo.betfair.com/betfairsp/prices/", betfair_horse_racing$file_name, sep ="")
 
-
-# temporarily shorten to work with smaller df
+# define year we're looking for
 betfair_horse_racing <- betfair_horse_racing %>%
-  dplyr::filter(str_detect(links, "2020.csv"))
+  dplyr::filter(str_detect(links, paste(year, ".csv", sep = "")))
+
+# access win data and save to data folder ----------
+
+# add win data to dataframe and save to data folder
+betfair_win_links <- betfair_horse_racing %>%
+  dplyr::filter(!str_detect(links, 'place'))
+betfair_win_links <- betfair_win_links$links
+
+betfair_win_data <- vroom(betfair_win_links)
+
+betfair_win_data <- betfair_win_data %>%
+  rename(
+    event_id = EVENT_ID,
+    menu_hint = MENU_HINT,
+    market = EVENT_NAME,
+    start_time = EVENT_DT,
+    selection_id = SELECTION_ID,
+    name = SELECTION_NAME,
+    win_bool = WIN_LOSE,
+    bsp = BSP,
+    avg_pre_off = PPWAP,
+    avg_morning = MORNINGWAP,
+    max_pre_off = PPMAX,
+    min_pre_off = PPMIN,
+    max_in_play = IPMAX,
+    min_in_play = IPMIN,
+    volume_morning = MORNINGTRADEDVOL,
+    volume_pre_off = PPTRADEDVOL,
+    volume_in_play = IPTRADEDVOL
+  )
+
+# save to file
+
+assign(paste0("betfair_win_data_", year),betfair_win_data)
+Object = get(paste0("betfair_win_data_", year))
+save(Object, file = paste0("data/betfair_win_data_", year, ".rda"))
+
+# save place data to file in data ----------
 
 # add place data to dataframe and save to data folder
 betfair_place_links <- betfair_horse_racing %>%
@@ -75,9 +116,8 @@ betfair_place_data <- betfair_place_data %>%
     volume_in_play = IPTRADEDVOL
   )
 
-betfair_place_data$place_probability <- 1 / betfair_place_data$bsp
+# identify year and save to file
 
-# identify year
-betfair_place_data_2020 <- betfair_place_data
-
-save(betfair_place_data_2020, file = "data/betfair_place_data_2020.Rda")
+assign(paste0("betfair_place_data_", year),betfair_place_data)
+Object = get(paste0("betfair_place_data_", year))
+save(Object, file = paste0("data/betfair_place_data_", year, ".rda"))
