@@ -1,4 +1,6 @@
 # about ---------
+# 01_proform_data_import.R
+#
 # This file links to the proform database as creates the database we want to
 # work with
 # saves this data to data/
@@ -11,60 +13,65 @@ proform_db_connection <- dbConnect(odbc(),
                                    Trusted_Connection = TRUE)
 
 # create new runners database -----------
-past_runners <- dbGetQuery(proform_db_connection, "SELECT RH_Rno, HIR_HNo,
-                            HIR_Won, HIR_Placed, J_No, T_No, HIR_BSP,
-                            HIR_DistanceToWinner, HIR_PositionNo, HIR_Rating,
-                            HIR_Drawn
+past_runners <- dbGetQuery(proform_db_connection, "SELECT RH_RNo, HIR_HNo,
+                            HIR_DistanceToWinner, HIR_Age, J_No,
+                            HIR_JockeysClaim, T_No, HIR_Pounds, HIR_PositionNo,
+                            HIR_TimeInSeconds, HIR_Rating, HIR_Drawn,
+                            HIR_PaceAbbrev, HIR_FinPaceAbbrev, HIR_PrevRNo,
+                            HIR_OfficialRating, HIR_UserRating10, HIR_PFR,
+                            HIR_Headgear, HIR_Penalty, HIR_BSP
                            FROM vw_Races")
 past_runners <- past_runners %>%
   rename(
-    race_id = RH_Rno,
+    race_id = RH_RNo,
     horse_id = HIR_HNo,
-    won = HIR_Won,
-    placed = HIR_Placed,
-    jockey_id = J_No,
-    trainer_id = T_No,
-    bsp = HIR_BSP,
     distance_to_winner = HIR_DistanceToWinner,
+    age = HIR_Age,
+    jockey_id = J_No,
+    jockey_claim = HIR_JockeysClaim,
+    trainer_id = T_No,
+    weight = HIR_Pounds,
     finish_position = HIR_PositionNo,
+    time = HIR_TimeInSeconds,
     pf_speed_rating = HIR_Rating,
-    draw =HIR_Drawn
+    draw = HIR_Drawn,
+    pace = HIR_PaceAbbrev,
+    fin_pace = HIR_FinPaceAbbrev,
+    prev_race = HIR_PrevRNo,
+    or = HIR_OfficialRating,
+    pf_power_rating = HIR_UserRating10,
+    pf_rating = HIR_PFR,
+    headgear = HIR_Headgear,
+    penalty = HIR_Penalty,
+    win_bsp = HIR_BSP,
     )
 
-# clean to N/A bsp = -1 (no BSP) or 0 (no BSP yet)
-past_runners <- past_runners %>%
-  replace_with_na(replace = list(bsp =c(-1, 0)))
-
-# assign placed = true to winners
-past_runners$placed <- past_runners$placed + past_runners$won
-
 # create new races database ---------
-past_races <- dbGetQuery(proform_db_connection, "SELECT RH_RNo, RH_CNo,
-                            RH_NoOfRunners, RH_DateTime, RH_RaceTypeID, RH_Name
+past_races <- dbGetQuery(proform_db_connection, "SELECT RH_RNo, RH_CNo, RH_Name,
+                            RH_Value, RH_NoOfRunners, RH_Class, RH_RaceTypeID,
+                            RH_GoingID, RH_ActualGoingID, RH_DistanceID,
+                            RH_MinAge, RH_MaxAge, RH_HandicapLimit, RH_DateTime,
+                            RH_ClassNum
                            FROM NEW_RH")
-# 
+
 past_races <- past_races %>%
   rename(
     race_id = RH_RNo,
     course_id = RH_CNo,
+    race_name = RH_Name,
+    value = RH_Value,
     num_runners = RH_NoOfRunners,
-    race_datetime = RH_DateTime,
-    race_type = RH_RaceTypeID,
-    name = RH_Name
+    race_class = RH_Class,
+    type = RH_RaceTypeID,
+    official_going = RH_GoingID,
+    actual_going = RH_ActualGoingID,
+    distance_id = RH_DistanceID,
+    min_age = RH_MinAge,
+    max_age = RH_MaxAge,
+    hc_limit = RH_HandicapLimit,
+    date_time = RH_DateTime,    
+    class_num = RH_ClassNum
   )
-
-# assign number of places to each
-past_races$num_places <- integer(nrow(past_races))
-
-past_races$num_places[which(past_races$num_runners <= 4)] <- 1
-past_races$num_places[which(past_races$num_runners > 4 & 
-                              past_races$num_runners <= 7)] <- 2
-# set all greater than 7 to 3 and then reset
-past_races$num_places[which(past_races$num_runners > 7)] <- 3
-# temporary fix while race categories not available
-past_races$num_places[which(past_races$num_runners > 15 & 
-                              grepl("andicap", past_races$name, TRUE))] <- 4
-
 
 # get lookup tables and rename ----------
 distance_lookup <- dbGetQuery(proform_db_connection, "SELECT D_ID, D_Distance, 
@@ -73,7 +80,7 @@ distance_lookup <- dbGetQuery(proform_db_connection, "SELECT D_ID, D_Distance,
 distance_lookup <- distance_lookup %>%
   rename(
     id = D_ID,
-    words = D_Distance,
+    description = D_Distance,
     yard = D_TotalYards
   )
 
@@ -162,3 +169,6 @@ save(classification_lookup, course_lookup, distance_lookup, form_letters_lookup,
      trainer_lookup, file = "data/data_lookups.rda")
 save(past_races, file = "data/past_races.rda")
 save(past_runners, file = "data/past_runners.rda")
+
+# clear workspace ------
+rm(list = ls())

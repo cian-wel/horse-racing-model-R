@@ -1,14 +1,15 @@
 # about -----
-# this file imports data from betfair databases (online csv files) and saves
-# to .rda files in data/
-# due to time constraints saves by year
+# 02_betfair_data_import.R
+#
+# this file imports data from betfair databases (online csv files) for a defined
+# year and saves to .rda files in data/
+#
+# script then binds the annual betfair files into one large file
 
-# assign year we're looking for------
+# define year we're looking for------
+year <- "2021"
 
-# define year we're looking for
-year <- "2008"
-
-# access website ------
+# access betfair website ------
 
 # save url location
 betfair_url <- "https://promo.betfair.com/betfairsp/prices/"
@@ -86,7 +87,42 @@ assign(paste0("betfair_win_data_", year),betfair_win_data)
 Object = get(paste0("betfair_win_data_", year))
 save(Object, file = paste0("data/betfair_win_data_", year, ".rda"))
 
-# save place data to file in data ----------
+# bind all the yearly win data files together and save to data/ ---------
+# get win file names
+win_file_names <- list.files(path="data/", pattern="betfair_win_data",
+                               recursive=FALSE)
+win_file_names <- paste0("data/", win_file_names)
+
+#load file into environment
+out = lapply(win_file_names, function(x){
+  env = new.env()
+  nm = load(x, envir = env)[1]
+  objname = gsub(pattern = 'data/', replacement = '', x = x, fixed = T)
+  objname = gsub(pattern = '.rda', replacement = '', x = objname)
+  assign(objname, env[[nm]], envir = .GlobalEnv)
+  0
+})
+
+# create betfair win data file
+betfair_win_data <- data.frame(matrix(ncol = ncol(betfair_win_data_2021),
+                                      nrow = 0))
+colnames(betfair_win_data) <- colnames(betfair_win_data_2021)
+
+# get names of data frames
+data_names <- gsub(pattern = 'data/', replacement = '',
+                   x = win_file_names, fixed = T)
+data_names <- data.frame(gsub(pattern = '.rda', replacement = '',
+                              x = data_names, fixed = T))
+colnames(data_names) <- c("name")
+
+# rbind the available data
+for(i in 1:nrow(data_names)) {
+  betfair_win_data <- rbind(betfair_win_data,get(data_names$name[i]))
+}
+
+save(betfair_win_data, file = "data/betfair_win_data.rda")
+
+# access place data save to data folder ----------
 
 # add place data to dataframe and save to data folder
 betfair_place_links <- betfair_horse_racing %>%
@@ -121,3 +157,40 @@ betfair_place_data <- betfair_place_data %>%
 assign(paste0("betfair_place_data_", year),betfair_place_data)
 Object = get(paste0("betfair_place_data_", year))
 save(Object, file = paste0("data/betfair_place_data_", year, ".rda"))
+
+# bind all the yearly place data files together and save to data/ ---------
+# get place file names
+place_file_names <- list.files(path="data/", pattern="betfair_place_data",
+                          recursive=FALSE)
+place_file_names <- paste0("data/", place_file_names)
+
+#load file into environment
+out = lapply(place_file_names, function(x){
+  env = new.env()
+  nm = load(x, envir = env)[1]
+  objname = gsub(pattern = 'data/', replacement = '', x = x, fixed = T)
+  objname = gsub(pattern = '.rda', replacement = '', x = objname)
+  assign(objname, env[[nm]], envir = .GlobalEnv)
+  0
+})
+
+# create betfair place data file
+betfair_place_data <- data.frame(matrix(ncol = ncol(betfair_place_data_2021), nrow = 0))
+colnames(betfair_place_data) <- colnames(betfair_place_data_2021)
+
+# get names of data frames
+data_names <- gsub(pattern = 'data/', replacement = '',
+                         x = place_file_names, fixed = T)
+data_names <- data.frame(gsub(pattern = '.rda', replacement = '',
+                         x = data_names, fixed = T))
+colnames(data_names) <- c("name")
+
+# rbind the available data
+for(i in 1:nrow(data_names)) {
+  betfair_place_data <- rbind(betfair_place_data,get(data_names$name[i]))
+}
+
+save(betfair_place_data, file = "data/betfair_place_data.rda")
+
+# clear workspace ------
+rm(list = ls())

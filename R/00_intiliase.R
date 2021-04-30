@@ -1,3 +1,11 @@
+# about ---------
+# 00_initialise.R
+#
+# this file initialises the workspace
+
+# clear workspace ------
+rm(list = ls())
+
 # set working directory -------
 working_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
 working_directory <- paste(working_directory, "/..", sep = "")
@@ -15,3 +23,6 @@ library(odbc)
 library(DBI)
 library(naniar)
 library(caret)
+
+# clear workspace ------
+rm(list = ls())

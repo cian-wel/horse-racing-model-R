@@ -3,32 +3,7 @@
 
 # load available data -------
 
-load(file = "data/data_lookups.rda")
-load(file = "data/past_races.rda")
-load(file = "data/past_runners.rda")
 
-# clean data as required --------
-
-# rename the dataset
-dataset <- past_runners
-
-# remove nas
-dataset <- dataset %>%
-  dplyr::filter(!is.na(bsp))
-
-# replace lookups
-dataset <- dataset %>%
-  left_join(select(jockey_lookup, name, id), by = c("jockey_id" = "id")) %>%
-  rename(jockey_name = name) %>%
-  select(-jockey_id)
-
-dataset <- dataset %>%
-  left_join(select(trainer_lookup, name, id), by = c("trainer_id" = "id")) %>%
-  rename(trainer_name = name) %>%
-  select(-trainer_id)
-
-# get list of remaining race ids
-dataset_race_id <- dataset$race_id[!duplicated(dataset$race_id)]
 
 # create training and validation datasets ---------
 
