@@ -12,6 +12,33 @@ proform_db_connection <- dbConnect(odbc(),
                                    Database = "PRODB",
                                    Trusted_Connection = TRUE)
 
+# create new horse database -----
+
+past_horses <- dbGetQuery(proform_db_connection, "SELECT H_No, H_Name,
+                            H_country, H_Sex, H_FoalDate, H_Dam, H_Dam_yearBorn,
+                            H_Dam_bred, H_Sire, H_Sire_yearBorn, H_Sire_bred,
+                            H_DamSire, H_DamSire_yearBorn, H_DamSire_bred,
+                            H_Breeders_Name
+                           FROM NEW_H")
+past_horses <- past_horses %>%
+  rename(
+    horse_id = H_No,
+    name = H_Name,
+    country = H_country,
+    sex = H_Sex,
+    dob = H_FoalDate,
+    dam = H_Dam,
+    dam_yob = H_Dam_yearBorn,
+    dam_bred = H_Dam_bred,
+    sire = H_Sire,
+    sire_yob = H_Sire_yearBorn,
+    sire_bred = H_Sire_bred,
+    damsire = H_DamSire,
+    damsire_yob = H_DamSire_yearBorn,
+    damsire_bred = H_DamSire_bred,
+    breeder = H_Breeders_Name
+    )
+
 # create new runners database -----------
 past_runners <- dbGetQuery(proform_db_connection, "SELECT RH_RNo, HIR_HNo,
                             HIR_DistanceToWinner, HIR_Age, J_No,
@@ -69,12 +96,12 @@ past_races <- past_races %>%
     min_age = RH_MinAge,
     max_age = RH_MaxAge,
     hc_limit = RH_HandicapLimit,
-    date_time = RH_DateTime,    
+    date_time = RH_DateTime,
     class_num = RH_ClassNum
   )
 
 # get lookup tables and rename ----------
-distance_lookup <- dbGetQuery(proform_db_connection, "SELECT D_ID, D_Distance, 
+distance_lookup <- dbGetQuery(proform_db_connection, "SELECT D_ID, D_Distance,
                             D_TotalYards
                            FROM DistanceLookups")
 distance_lookup <- distance_lookup %>%
@@ -92,7 +119,7 @@ going_lookup <- going_lookup %>%
     description = G_Going
   )
 
-classification_lookup <- dbGetQuery(proform_db_connection, "SELECT CLK_ID, 
+classification_lookup <- dbGetQuery(proform_db_connection, "SELECT CLK_ID,
                             CLK_Desc
                            FROM ClassificationLookups")
 classification_lookup <- classification_lookup %>%
@@ -101,7 +128,7 @@ classification_lookup <- classification_lookup %>%
     description = CLK_Desc
   )
 
-form_letters_lookup <- dbGetQuery(proform_db_connection, "SELECT FPL_ID, 
+form_letters_lookup <- dbGetQuery(proform_db_connection, "SELECT FPL_ID,
                             FPL_Text
                            FROM FinishingPositionLookups")
 form_letters_lookup <- form_letters_lookup %>%
@@ -110,7 +137,7 @@ form_letters_lookup <- form_letters_lookup %>%
     description = FPL_Text
   )
 
-course_lookup <- dbGetQuery(proform_db_connection, "SELECT C_ID, C_Name, 
+course_lookup <- dbGetQuery(proform_db_connection, "SELECT C_ID, C_Name,
                               C_Country, C_Direction, C_Characteristics
                             FROM NEW_C")
 course_lookup <- course_lookup %>%
@@ -122,7 +149,7 @@ course_lookup <- course_lookup %>%
     characteristics = C_Characteristics
   )
 
-race_type_lookup <- dbGetQuery(proform_db_connection, "SELECT RTL_ID, 
+race_type_lookup <- dbGetQuery(proform_db_connection, "SELECT RTL_ID,
                               RTL_Description, RTL_Jumps
                             FROM RaceTypeLookups")
 race_type_lookup <- race_type_lookup %>%
@@ -131,21 +158,6 @@ race_type_lookup <- race_type_lookup %>%
     description = RTL_Description,
     jumps_bool = RTL_Jumps
   )
-
-horse_lookup <- dbGetQuery(proform_db_connection, "SELECT H_No, H_Name, H_Sex, 
-                            H_Dam, H_Sire, H_DamSire, H_FoalDate
-                           FROM NEW_H")
-horse_lookup <- horse_lookup %>%
-  rename(
-    id = H_No,
-    name = H_Name,
-    sex = H_Sex,
-    dam = H_Dam,
-    sire = H_Sire,
-    damsire = H_DamSire,
-    dob = H_FoalDate
-  )
-
 
 jockey_lookup <- dbGetQuery(proform_db_connection, "SELECT J_No, J_Name
                            FROM NEW_J")
@@ -165,10 +177,11 @@ trainer_lookup <- trainer_lookup %>%
 
 # save data to .Rda files ---------
 save(classification_lookup, course_lookup, distance_lookup, form_letters_lookup,
-     going_lookup, horse_lookup, jockey_lookup, race_type_lookup, 
+     going_lookup, jockey_lookup, race_type_lookup,
      trainer_lookup, file = "data/data_lookups.rda")
 save(past_races, file = "data/past_races.rda")
 save(past_runners, file = "data/past_runners.rda")
+save(past_horses, file = "data/past_horses.rda")
 
 # clear workspace ------
 rm(list = ls())

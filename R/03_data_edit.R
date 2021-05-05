@@ -10,11 +10,12 @@
 load(file = "data/data_lookups.rda")
 load(file = "data/past_races.rda")
 load(file = "data/past_runners.rda")
+load(file = "data/past_horses.rda")
 
 # past_runners general data cleaning --------
 # clean to N/A bsp = -1 (no BSP) or 0 (no BSP yet)
 past_runners <- past_runners %>%
-  replace_with_na(replace = list(win_bsp =c(-1, 0)))
+  replace_with_na(replace = list(win_bsp =c(-1, 0), pf_speed_rating = 0))
 
 # assign number of places to each race
 num_places <- integer(nrow(past_races))
@@ -77,8 +78,11 @@ past_races <- past_races %>%
   select(-type) %>%
   rename(type = description)
 
-# select races we want to look at -----
 
+# past horses general data cleaning -----
+past_horses$dob <- as.Date(past_horses$dob, format = "%d/%m/%Y")
+
+# select races we want to look at. Filter other data as required -----
 ds_past_races <- past_races %>%
   filter(
     type == "A/W" &
@@ -87,20 +91,38 @@ ds_past_races <- past_races %>%
     course_country == "(GB)" &
     date_time >= as.Date("2019-01-01")
     )
+rownames(ds_past_races) <- NULL
 
 # get list of remaining race ids
-race_ids <- ds_past_races$race_id[] 
+race_ids <- ds_past_races$race_id[]
 ds_past_runners <- past_runners[past_runners$race_id %in% race_ids,]
+rownames(ds_past_runners) <- NULL
 
-# final data cleaning steps -----
+# get list of remaining horses
+horse_ids <- ds_past_runners$horse_id[]
+ds_past_horses <- past_horses[past_horses$horse_id %in% horse_ids,]
+rownames(ds_past_horses) <- NULL
+
+# general data cleaning steps -----
 
 # remove bsp nas
+# this step required here because horse numbers aren't all right
 past_runners <- past_runners %>%
   dplyr::filter(!is.na(win_bsp))
+
+# horse races -----
+
+ds_past_horses$races <- 0
+
+for (i in 1:nrow(ds_past_horses)) {
+  ds_past_horses$races[i] <- I(list(
+    past_runners$race_id[past_runners$horse_id == ds_past_horses$horse_id[i]]))
+}
 
 # save files ------
 save(ds_past_runners, file = "output/ds_past_runners.rda")
 save(ds_past_races, file = "output/ds_past_races.rda")
+save(ds_past_horses, file = "output/ds_past_horses.rda")
 
 # clear workspace ------
 rm(list = ls())
