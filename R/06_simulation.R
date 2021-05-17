@@ -2,8 +2,8 @@
 # this script takes model for rating and simulates results
 
 # variables -----
-simulations = as.integer(1000)
-stan_dev = as.integer(10)
+simulations = as.integer(20000)
+stan_dev = as.integer(15)
 
 # functions ------
 monte_carlo = function(val, stan_dev, n) {
@@ -29,25 +29,27 @@ sim_race = function(x, stan_dev, n) {
 }
 
 # load available data -----
-load(file = "output/ds_past_horses.rda")
-load(file = "output/trn_past_races.rda")
-load(file = "output/trn_past_runners.rda")
-load(file = "output/val_past_races.rda")
-load(file = "output/val_past_runners.rda")
+load(file = "output/trn_runners.rda")
+load(file = "output/val_runners.rda")
+
+# adjust predicted pr ----
+sim_runners <- rbind(trn_runners, val_runners)
+
+sim_runners$adj_pred_pr <- sim_runners$pred_pr - sim_runners$or -
+  sim_runners$pen
 
 # run simulation -----
+sim_runners = sim_runners[order(sim_runners$race_id, sim_runners$horse_id),]
 
-trn_past_runners = trn_past_runners[
-  order(trn_past_runners$race_id, trn_past_runners$horse_id),]
-
-trn_past_runners$win_chance = (sim_race(trn_past_runners[
-  ,c("race_id", "horse_id", "predicted_rating")], stan_dev, simulations) - 1) /
+print("start")
+sim_runners$win_chance = (sim_race(sim_runners[
+  ,c("race_id", "horse_id", "adj_pred_pr")], stan_dev, simulations) - 1) /
   simulations
-
-trn_past_runners$win_price = 1 / trn_past_runners$win_chance
+sim_runners$win_price = 1 / sim_runners$win_chance
+print("finished")
 
 # save files ----
-save(trn_past_runners, file = "output/trn_past_runners.rda")
+save(sim_runners, file = "output/sim_runners.rda")
 
 # clear workspace ------
-rm(list = ls())
+# rm(list = ls())

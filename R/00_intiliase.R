@@ -23,6 +23,9 @@ library(odbc)
 library(DBI)
 library(naniar)
 library(caret)
+library(randomForest)
+library(Metrics)
+library(Hmisc)
 
 # clear workspace ------
 rm(list = ls())

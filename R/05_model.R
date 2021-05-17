@@ -1,33 +1,58 @@
 # about ------
-# script predicts rating horse will run to in race
+# script predicts rating horse will run to in race based on gbm model
 
 # load available data -------
-load(file = "output/ds_past_horses.rda")
-load(file = "output/trn_past_races.rda")
-load(file = "output/trn_past_runners.rda")
-load(file = "output/val_past_races.rda")
-load(file = "output/val_past_runners.rda")
-
-
-trn_past_runners <- trn_past_runners %>%
-  filter(!is.na(trn_past_runners$pf_speed_rating) &
-           !is.na(lto_rating) &
-           !is.na(three_mon_rating) &
-           !is.na(six_mon_rating) &
-           !is.na(life_rating) &
-           !is.na(max_rating))
+load(file = "output/trn_runners.rda")
+load(file = "output/val_runners.rda")
 
 # model -----
-rating_model = train(pf_speed_rating ~ lto_rating + three_mon_rating +
-                       six_mon_rating + life_rating + max_rating,
-                     method = 'gbm', data = trn_past_runners, verbose = F)
+trn_predictors <- trn_runners %>%
+  select(
+    lto_pr,
+    rec_med_pr,
+    med_pr,
+    max_pr,
+    lto_spd,
+    rec_med_spd,
+    med_spd,
+    max_spd,
+    num_runs
+  )
+
+trn_output <- trn_runners$pr
+
+val_predictors <- val_runners %>%
+  select(
+    lto_pr,
+    rec_med_pr,
+    med_pr,
+    max_pr,
+    lto_spd,
+    rec_med_spd,
+    med_spd,
+    max_spd,
+    num_runs
+  )
+
+val_output <- val_runners$pr
+
+pr_model <- train(x = trn_predictors, y = trn_output, method = "gbm")
+
+print("training set")
+print(rmse(predict(pr_model, trn_predictors), trn_output))
+
+print("validation set")
+print(rmse(predict(pr_model, val_predictors), val_output))
+
 
 # save predictions to datasets
-trn_past_runners$predicted_rating = predict(rating_model, trn_past_runners)
+trn_runners$pred_pr = predict(pr_model, trn_runners)
+val_runners$pred_pr = predict(pr_model, val_runners)
 
 # save file -----
-saveRDS(rating_model, "output/rating_model.rds")
-save(trn_past_runners, file = "output/trn_past_runners.rda")
+saveRDS(pr_model, file = "output/pr_model.rds")
+save(trn_runners, file = "output/trn_runners.rda")
+save(val_runners, file = "output/val_runners.rda")
 
 # clear workspace ----
-# rm(list = ls())
+rm(list = ls())
